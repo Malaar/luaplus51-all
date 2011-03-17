@@ -939,7 +939,7 @@ LuaObject LuaObject::Get(int key) const
 	api_check(L, ttistable(&m_object));
 
 	TValue obj;
-	setnvalue2n(&obj, key);
+	setnvalue2n(&obj, (lua_Number)key);
 	TValue v;
 	luaV_gettable(L, &m_object, &obj, &v);
 	return LuaObject(L, &v);
@@ -1046,7 +1046,11 @@ LuaObject LuaObject::RawGet(int key) const
 
 	const TValue* o = &m_object;
 	api_check(L, ttistable(o));
+#if LNUM_PATCH
+	const TValue* v = luaH_getint(hvalue(o), key);
+#else
 	const TValue* v = luaH_getnum(hvalue(o), key);
+#endif /* LNUM_PATCH */
 	return LuaObject(L, v);
 }
 
@@ -1119,6 +1123,8 @@ LuaObject LuaObject::operator[](const LuaStackObject& key) const
 }
 
 
+#if !LNUM_PATCH
+
 LuaObject LuaObject::Lookup(const char* key) const
 {
 	LuaObject table = *this;
@@ -1182,18 +1188,29 @@ LuaObject LuaObject::Lookup(const char* key) const
 	return LuaObject(L);
 }
 
+#else
+
+LuaObject LuaObject::Lookup(const char* key) const
+{
+	luaplus_assert(0);
+	LuaObject table = *this;
+	return table;
+}
+
+#endif /* LNUM_PATCH */
+
 namespace detail
 {
 	LUAPLUS_API void AssignNewTObject(lua_State* L, lua_TValue* obj, const LuaArgNil&)			{  (void)L;  setnilvalue2n(L, obj);  }
 	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, bool value)			{  setbvalue2n(obj, value);  }
-	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, char value)			{  setnvalue2n(obj, value);  }
-	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, unsigned char value)	{  setnvalue2n(obj, value);  }
-	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, short value)			{  setnvalue2n(obj, value);  }
-	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, unsigned short value)	{  setnvalue2n(obj, value);  }
-	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, int value)			{  setnvalue2n(obj, value);  }
-	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, unsigned int value)	{  setnvalue2n(obj, value);  }
-	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, float value)			{  setnvalue2n(obj, value);  }
-	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, double value)			{  setnvalue2n(obj, value);  }
+	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, char value)			{  setnvalue2n(obj, (lua_Number)value);  }
+	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, unsigned char value)	{  setnvalue2n(obj, (lua_Number)value);  }
+	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, short value)			{  setnvalue2n(obj, (lua_Number)value);  }
+	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, unsigned short value)	{  setnvalue2n(obj, (lua_Number)value);  }
+	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, int value)				{  setnvalue2n(obj, (lua_Number)value);  }
+	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, unsigned int value)	{  setnvalue2n(obj, (lua_Number)value);  }
+	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, float value)			{  setnvalue2n(obj, (lua_Number)value);  }
+	LUAPLUS_API void AssignNewTObject(lua_State* /*L*/, lua_TValue* obj, double value)			{  setnvalue2n(obj, (lua_Number)value);  }
 	LUAPLUS_API void AssignNewTObject(lua_State* L, lua_TValue* obj, const char* value)		{  setsvalue2n(L, obj, luaS_newlstr(L, value, strlen(value)));  }
 //jj	LUAPLUS_API void AssignNewTObject(lua_State* L, lua_TValue* obj, const lua_WChar* value)	{  setwsvalue2n(L, obj, luaS_newlwstr(L, value, lua_WChar_len(value)));  }
 	LUAPLUS_API void AssignNewTObject(lua_State* L, lua_TValue* obj, const LuaObject& value)	{  (void)L;  setobj2n(L, obj, value.GetTObject());  }
@@ -1260,7 +1277,7 @@ LuaObject& LuaObject::SetInteger(const char* key, int value)
 {
 	luaplus_assert(L  &&  IsTable());
 	TValue valueObj;
-	setnvalue2n(&valueObj, value);
+	setnvalue2n(&valueObj, (lua_Number)value);
 	return SetTableHelper(key, &valueObj);
 }
 
@@ -1269,7 +1286,7 @@ LuaObject& LuaObject::SetInteger(int key, int value)
 {
 	luaplus_assert(L  &&  IsTable());
 	TValue valueObj;
-	setnvalue2n(&valueObj, value);
+	setnvalue2n(&valueObj, (lua_Number)value);
 	return SetTableHelper(key, &valueObj);
 }
 
@@ -1278,7 +1295,7 @@ LuaObject& LuaObject::SetInteger(LuaObject& key, int value)
 {
 	luaplus_assert(L  &&  IsTable());
 	TValue valueObj;
-	setnvalue2n(&valueObj, value);
+	setnvalue2n(&valueObj, (lua_Number)value);
 	return SetTableHelper(key, &valueObj);
 }
 
@@ -1587,7 +1604,7 @@ LuaObject& LuaObject::RawSetInteger(const char* key, int value)
 {
 	luaplus_assert(L  &&  IsTable());
 	TValue valueObj;
-	setnvalue2n(&valueObj, value);
+	setnvalue2n(&valueObj, (lua_Number)value);
 	return RawSetTableHelper(key, &valueObj);
 }
 
@@ -1596,7 +1613,7 @@ LuaObject& LuaObject::RawSetInteger(int key, int value)
 {
 	luaplus_assert(L  &&  IsTable());
 	TValue valueObj;
-	setnvalue2n(&valueObj, value);
+	setnvalue2n(&valueObj, (lua_Number)value);
 	return RawSetTableHelper(key, &valueObj);
 }
 
@@ -1605,7 +1622,7 @@ LuaObject& LuaObject::RawSetInteger(LuaObject& key, int value)
 {
 	luaplus_assert(L  &&  IsTable());
 	TValue valueObj;
-	setnvalue2n(&valueObj, value);
+	setnvalue2n(&valueObj, (lua_Number)value);
 	return RawSetTableHelper(key, &valueObj);
 }
 
@@ -1885,7 +1902,7 @@ void LuaObject::AssignInteger(LuaState* state, int value)
 		RemoveFromUsedList();
 		AddToUsedList(LuaState_to_lua_State(state));
 	}
-	setnvalue(&m_object, value);
+	setnvalue(&m_object, (lua_Number)value);
 }
 
 
@@ -2123,7 +2140,7 @@ LuaObject& LuaObject::SetTableHelper(const char* key, TValue* valueObj)
 LuaObject& LuaObject::SetTableHelper(int key, TValue* valueObj)
 {
 	TValue keyObj;
-	setnvalue2n(&keyObj, key);
+	setnvalue2n(&keyObj, (lua_Number)key);
 	luaV_settable(L, &m_object, &keyObj, valueObj);
 	return *this;
 }
@@ -2158,7 +2175,7 @@ LuaObject& LuaObject::RawSetTableHelper(const char* key, TValue* valueObj)
 LuaObject& LuaObject::RawSetTableHelper(int key, TValue* valueObj)
 {
 	TValue keyObj;
-	setnvalue2n(&keyObj, key);
+	setnvalue2n(&keyObj, (lua_Number)key);
 	return RawSetTableHelper(&keyObj, valueObj);
 }
 

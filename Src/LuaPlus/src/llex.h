@@ -43,8 +43,20 @@ enum RESERVED {
   TK_SHL, TK_SHR, TK_XOR,
 #endif /* LUA_BITFIELD_OPS */
   TK_EOS
+#if LNUM_PATCH
+  , TK_INT
+#ifdef LNUM_COMPLEX
+  , TK_NUMBER2   /* imaginary constants: Ni */ 
+#endif
+#endif /* LNUM_PATCH */
 #else
   TK_NAME, TK_STRING, TK_EOS
+#if LNUM_PATCH
+  , TK_INT
+#ifdef LNUM_COMPLEX
+  , TK_NUMBER2   /* imaginary constants: Ni */ 
+#endif
+#endif /* LNUM_PATCH */
 #endif /* LUA_BITFIELD_OPS || LUA_WIDESTRING */
 };
 
@@ -55,9 +67,16 @@ enum RESERVED {
 /* array with token `names' */
 LUAI_DATA const char *const luaX_tokens [];
 
-
+#if LNUM_PATCH
+/* SemInfo is a local data structure of 'llex.c', used for carrying a string
+ * or a number. A separate token (TK_*) will tell, how to interpret the data.
+ */      
+#endif /* LNUM_PATCH */
 typedef union {
   lua_Number r;
+#if LNUM_PATCH
+  lua_Integer i;
+#endif /* LNUM_PATCH */
   TString *ts;
 } SemInfo;  /* semantics information */
 
